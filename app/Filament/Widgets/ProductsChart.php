@@ -8,14 +8,14 @@ use Filament\Widgets\ChartWidget;
 
 class ProductsChart extends ChartWidget
 {
-    protected static ?string $heading = 'Top 5 Selling Products';
+    protected static ?string $heading = 'Top 10 Best Seller Products';
     protected static ?int $sort = 3;
     protected function getData(): array
     {
          $topProducts = salesItem::selectRaw('product_id, SUM(quantity) as total_quantity')
          ->groupBy('product_id')
          ->orderByDesc('total_quantity')
-         ->limit(5)
+         ->limit(10)
          ->get();
 
 
@@ -31,7 +31,7 @@ class ProductsChart extends ChartWidget
         return [
             'datasets' => [
                 [
-                    'label' => 'Top 5 Selling Products',
+                    'label' => 'Top 10 Best Seller Products',
                     'data' => $data,
                     'backgroundColor' => 'rgba(54, 162, 235, 0.2)',
                     'borderColor' => 'rgba(54, 162, 235, 1)',
