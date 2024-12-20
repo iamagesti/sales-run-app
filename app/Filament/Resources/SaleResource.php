@@ -82,19 +82,39 @@ class SaleResource extends Resource
                                 ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                                 ->columnSpan(4)
                                 ->reactive()
-                                ->afterStateUpdated(function ($state, Set $set) {
-                                    $set('unit_amount', Product::find($state)?->selling_price ?? 0);
-                                })
-                                ->afterStateUpdated(function ($state, Set $set) {
-                                    $set('total_amount', Product::find($state)?->selling_price ?? 0);
+                                ->afterStateUpdated(function ($state, Set $set, Get $get) {
+                                    $product = Product::find($state);
+                                    if ($product) {
+                                        if ($product->expired_at && $product->expired_at < now()) {
+                                            Notification::make()
+                                                ->title('Expired Product')
+                                                ->body('The selected product is expired and cannot be sold.')
+                                                ->warning()
+                                                ->send();
+
+                                            $set('product_id', null);
+                                            return;
+                                        }
+
+                                        $set('unit_amount', $product->selling_price ?? 0);
+                                        $set('total_amount', $product->selling_price ?? 0);
+                                    }
                                 }),
+                                // ->afterStateUpdated(function ($state, Set $set) {
+                                //     $set('unit_amount', Product::find($state)?->selling_price ?? 0);
+                                // })
+                                // ->afterStateUpdated(function ($state, Set $set) {
+                                //     $set('total_amount', Product::find($state)?->selling_price ?? 0);
+                                // }),
                             Forms\Components\TextInput::make('quantity')
                                 ->required()
                                 ->numeric()
                                 ->default(1)
                                 ->minValue(1)
                                 ->columnSpan(2)
-                                ->reactive()
+                                ->live(onBlur: true)
+                                ->debounce(600)
+                                //->reactive()
                                 ->afterStateUpdated(function ($state, Set $set, Get $get) {
                                     $product = Product::find($get('product_id'));
                                     if ($product && $state > $product->stock) {
@@ -149,11 +169,20 @@ class SaleResource extends Resource
                     Forms\Components\TextInput::make('discount_percentage')
                         ->label('Discount Percentage (%)')
                         ->numeric()
-                        ->reactive()
+                        ->live(onBlur: true)
+                        ->minValue(0)
+                        ->debounce(600)
+                        //->reactive()
                         ->default(0)
+                        // ->afterStateUpdated(function (Set $set, Get $get) {
+                        //     $discountPercentage = $get('discount_percentage') ?? 0;
+                        //     $total = $get('sub_total') ?? 0;
+                        //     $discountAmount = ($discountPercentage / 100) * $total;
+                        //     $set('discount_amount', $discountAmount);
+                        // })
                         ->afterStateUpdated(function (Set $set, Get $get) {
-                            $discountPercentage = $get('discount_percentage') ?? 0;
-                            $total = $get('sub_total') ?? 0;
+                            $discountPercentage = (float)($get('discount_percentage') ?? 0);
+                            $total = (float)($get('sub_total') ?? 0);
                             $discountAmount = ($discountPercentage / 100) * $total;
                             $set('discount_amount', $discountAmount);
                         })
@@ -171,10 +200,19 @@ class SaleResource extends Resource
                     Forms\Components\TextInput::make('tax_percentage')
                         ->label('Tax Percentage (%)')
                         ->numeric()
-                        ->reactive()
+                        ->live(onBlur: true)
+                        ->minValue(0)
+                        ->debounce(600)
+                        //->reactive()
+                        // ->afterStateUpdated(function (Set $set, Get $get) {
+                        //     $taxPercentage = $get('tax_percentage') ?? 0;
+                        //     $subTotal = $get('sub_total') ?? 0;
+                        //     $taxAmount = ($taxPercentage / 100) * $subTotal;
+                        //     $set('tax_amount', $taxAmount);
+                        // })
                         ->afterStateUpdated(function (Set $set, Get $get) {
-                            $taxPercentage = $get('tax_percentage') ?? 0;
-                            $subTotal = $get('sub_total') ?? 0;
+                            $taxPercentage = (float)($get('tax_percentage') ?? 0);
+                            $subTotal = (float)($get('sub_total') ?? 0);
                             $taxAmount = ($taxPercentage / 100) * $subTotal;
                             $set('tax_amount', $taxAmount);
                         })
@@ -218,8 +256,11 @@ class SaleResource extends Resource
                         ->columnSpan(4),
                     Forms\Components\TextInput::make('paid_amount')
                         ->numeric()
+                        //->live()
+                        ->minValue(1)
+                        //->debounce(600)
                         ->prefix('IDR')
-                        ->reactive()
+                        ->live(onBlur: true)
                         ->label('Paid Amount')
                         ->afterStateUpdated(function (Set $set, Get $get, $state) {
                             self::updateExchangePaid($get, $set);

@@ -23,7 +23,7 @@ class StatsOverview extends BaseWidget
 
             Stat::make('Total Products', Product::count()),
             Stat::make('Total Low Stock Products', Product::where('stock', '<', 10)->count()),
-            Stat::make('Products Expiring in a Week', Product::where('expired_at', '<', Carbon::today()->addWeek())->where('expired_at', '>=', Carbon::today())->count()),
+            Stat::make('Total Products Expiring in a Week', Product::where('expired_at', '<', Carbon::today()->addWeek())->where('expired_at', '>=', Carbon::today())->count()),
             Stat::make('Total Expired Products', Product::where('expired_at', '<', Carbon::today())->count()),
             Stat::make('Total Products Sold in this month', salesItem::whereBetween('created_at', [$startOfMonth, $endOfMonth])->sum('quantity')), // Produk terjual di bulan ini
             Stat::make('Total Revenue in This Month', fn() => 'IDR ' . number_format(Sale::whereBetween('created_at', [$startOfMonth, $endOfMonth])->sum('grand_total'), 2)), // Total revenue bulan ini

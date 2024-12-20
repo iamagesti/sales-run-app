@@ -152,9 +152,8 @@ class ProductResource extends Resource
                             ->toArray();
                     })
                     ->query(function (Builder $query, array $data): Builder {
-                        // Check if 'category' key exists in the array
                         return $query->when(
-                            isset($data['category']), // Ensure the key exists
+                            isset($data['category']),
                             fn(Builder $query) => $query->where('category_id', $data['category'])
                         );
                     }),
@@ -225,7 +224,7 @@ class ProductResource extends Resource
         $lowStockProducts = Product::where('stock', '<', 10)->get();
 
         if ($lowStockProducts->isNotEmpty()) {
-            // Generate a notification message listing all products with low stock
+
             $productNames = $lowStockProducts->pluck('name')->join(', ');
 
             Notification::make()
@@ -235,18 +234,19 @@ class ProductResource extends Resource
                 ->sendToDatabase($recipients);
         }
     }
-
     protected static function checkExpiredProductNotification(): void
     {
-        // Ambil produk yang kedaluwarsa hari ini atau besok
+
         $expiredToday = Product::whereDate('expired_at', Carbon::today())->get();
         $expiredTomorrow = Product::whereDate('expired_at', Carbon::tomorrow())->get();
+        $expiringSoon = Product::whereBetween('expired_at', [Carbon::today()->addDays(2), Carbon::today()->addDays(29)])->get();
 
-        if ($expiredToday->isNotEmpty() || $expiredTomorrow->isNotEmpty()) {
+        if ($expiredToday->isNotEmpty() || $expiredTomorrow->isNotEmpty() || $expiringSoon->isNotEmpty()) {
             $recipients = Auth::user();
 
             $productNamesToday = $expiredToday->pluck('name')->join(', ');
             $productNamesTomorrow = $expiredTomorrow->pluck('name')->join(', ');
+            $productNamesExpiringSoon = $expiringSoon->pluck('name')->join(', ');
 
             $notificationBody = '';
 
@@ -258,6 +258,10 @@ class ProductResource extends Resource
                 $notificationBody .= "The following products expire tomorrow: $productNamesTomorrow. ";
             }
 
+            if ($productNamesExpiringSoon) {
+                $notificationBody .= "The following products will expire in less than 30 days: $productNamesExpiringSoon. ";
+            }
+
             Notification::make()
                 ->title('Product Expiration Alert')
                 ->body($notificationBody . "Please check the inventory and remove the products.")
@@ -265,5 +269,4 @@ class ProductResource extends Resource
                 ->sendToDatabase($recipients);
         }
     }
-
 }

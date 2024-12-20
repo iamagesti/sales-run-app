@@ -28,7 +28,7 @@ class CategoryResource extends Resource
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->maxLength(255)
-                    ,
+                    ->unique(ignoreRecord:true),
                 Forms\Components\TextInput::make('description')
                     ->maxLength(255),
                 Forms\Components\Toggle::make('is_active')
@@ -75,7 +75,7 @@ class CategoryResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    //Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }
