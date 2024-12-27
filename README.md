@@ -11,6 +11,8 @@
 
 SalesRUN is a sales management system built with Laravel.The system allows users to manage sales, categories, stock, products, users and roles permissions.
 
+Created by iamgesti
+
 ### Features
 
 -   Dashboard
